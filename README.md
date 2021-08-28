@@ -2,4 +2,4 @@
 
 สุรปัญญา ทองดี 6110613152
 
-demo clip 
+คลิปการรันโปรแกรม https://youtu.be/L7TwLDagxmc
