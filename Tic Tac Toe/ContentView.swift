@@ -103,6 +103,7 @@ struct ContentView: View {
                 .padding(.bottom, 30)
                 .disabled(isGameboardDisabled)
                 .navigationBarTitle(Text("no text"), displayMode: .automatic)
+                .onAppear(perform: resetGame)
                 .navigationBarHidden(true)
                 .alert(item: $alertItem) { alertItem in
                     Alert(title: Text(alertItem.title), message: Text(alertItem.message), dismissButton: .default(Text(alertItem.buttonTitle), action: resetGame))
