@@ -11,71 +11,128 @@ struct ContentView: View {
     @State private var moves: [Move?] = Array(repeating: nil, count: 9)
     @State private var isGameboardDisabled = false
     @State private var alertItem: AlertItem?
+    @State private var turnStatus = "Your turn"
     var body: some View {
         NavigationView {
-            LazyVGrid(columns: [GridItem(), GridItem(), GridItem()]) {
-                ForEach(0..<9) { i in
-                    ZStack {
-                        Color.red
-                            .opacity(0.5)
-                            .frame(width: squareSize(), height: squareSize())
-                            .cornerRadius(15)
-                    
-                        Image(systemName: moves[i]?.mark ?? "xmark.circle")
-                            .resizable()
-                            .frame(width: markSize(), height: markSize())
+            VStack {
+                HStack{
+                    Text("Tic Tac Toe").bold()
+                }
+                .multilineTextAlignment(.center)
+                .font(.largeTitle)
+                .padding()
+                .padding()
+                Spacer()
+                LazyVStack{
+                    ZStack{
+                        if turnStatus == "Your turn" {
+                            Color.green
+                                .opacity(0.75)
+                                .cornerRadius(15)
+                                .frame(width: squareSize(), height: squareSize()/2.5)
+                        } else {
+                            Color.red
+                                .opacity(0.75)
+                                .cornerRadius(15)
+                                .frame(width: squareSize() * 1.5, height: squareSize()/2.5)
+                        }
+                        Text(turnStatus).bold()
                             .foregroundColor(.white)
-                            .opacity(moves[i] == nil ? 0 : 1)
                     }
-                    .onTapGesture {
-                        if isSquareOccupied(in: moves, forIndex: i) { return }
-                        
-                        moves[i] = Move(player: .human, boardIndex: i)
-                        
-                        if checkWinCondition(for: .human, in: moves) {
-                            alertItem = AlertContext.humanWin
-                            return
+                    
+                }
+                .animation(.default)
+                
+                LazyVGrid(columns: [GridItem(), GridItem(), GridItem()]) {
+                    ForEach(0..<9) { i in
+                        ZStack {
+                            Color.yellow
+                                .opacity(0.75)
+                                .frame(width: squareSize(), height: squareSize())
+                                .cornerRadius(15)
+                            
+                            ZStack {
+                                if moves[i]?.mark != nil {
+                                    Image(systemName: moves[i]?.mark ?? "xmark.circle")
+                                        .resizable()
+                                        .frame(width: markSize(), height: markSize())
+                                        .foregroundColor(Color(red: 0.1607843137254902, green: 0.1843137254901961, blue: 0.2))
+                                        .opacity(moves[i] == nil ? 0 : 1)
+                                }
+                            }.animation(.default)
+                                
                         }
-                        
-                        if checkForDraw(in: moves) {
-                            alertItem = AlertContext.draw
-                            return
-                        }
-                        isGameboardDisabled.toggle()
-                        
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            let computerPosition = determineComputerMove(in: moves)
-                            moves[computerPosition] = Move(player: .computer, boardIndex: computerPosition)
+                        .onTapGesture {
+                            if isSquareOccupied(in: moves, forIndex: i) { return }
+                            
+                            moves[i] = Move(player: .human, boardIndex: i)
+                            
+                            if checkWinCondition(for: .human, in: moves) {
+                                alertItem = AlertContext.humanWin
+                                return
+                            }
+                            
+                            if checkForDraw(in: moves) {
+                                alertItem = AlertContext.draw
+                                return
+                            }
+                            turnStatus = "Computer's turn"
                             isGameboardDisabled.toggle()
                             
-                            if checkWinCondition(for: .computer, in: moves) {
-                                alertItem = AlertContext.computerWin
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                let computerPosition = determineComputerMove(in: moves)
+                                moves[computerPosition] = Move(player: .computer, boardIndex: computerPosition)
+                                isGameboardDisabled.toggle()
+                                
+                                if checkWinCondition(for: .computer, in: moves) {
+                                    alertItem = AlertContext.computerWin
+                                    return
+                                }
+                                
+                                if checkForDraw(in: moves) {
+                                    alertItem = AlertContext.draw
+                                    return
+                                }
+                                turnStatus = "Your turn"
                             }
                         }
-                        
                     }
+                    
                 }
-                
-            }
-            .padding()
-            .disabled(isGameboardDisabled)
-            .navigationTitle("Tic Tac Toe")
-            .alert(item: $alertItem) { alertItem in
-                Alert(title: Text(alertItem.title), message: Text(alertItem.message), dismissButton: .default(Text(alertItem.buttonTitle), action: resetGame))
+                .padding()
+                .padding(.bottom, 30)
+                .disabled(isGameboardDisabled)
+                .navigationBarTitle(Text("no text"), displayMode: .automatic)
+                .navigationBarHidden(true)
+                .alert(item: $alertItem) { alertItem in
+                    Alert(title: Text(alertItem.title), message: Text(alertItem.message), dismissButton: .default(Text(alertItem.buttonTitle), action: resetGame))
+                }
+                Spacer()
                 
             }
         }
+        
     }
     
     func resetGame() {
         moves = Array(repeating: nil, count: 9)
+        if turnStatus == "Your turn" {
+            turnStatus = "Computer turn"
+            isGameboardDisabled.toggle()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
+                let computerPosition = determineComputerMove(in: moves)
+                moves[computerPosition] = Move(player: .computer, boardIndex: computerPosition)
+                isGameboardDisabled.toggle()
+                turnStatus = "Your turn"
+            }
+        } else {
+            turnStatus = "Your turn"
+        }
     }
     
     func checkWinCondition(for player: Player, in moves: [Move?]) -> Bool {
         let winPatterns: Array<Set<Int>> = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]]
         
-//        let playerMoves = moves.compactMap { $0 }.filter { $0.player == player }
-//        let playerPositions = Set(playerMoves.map { $0.boardIndex })
         let playerPositions = Set(moves.compactMap { $0 }
                                     .filter { $0.player == player }
                                     .map { $0.boardIndex })
